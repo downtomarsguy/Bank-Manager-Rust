@@ -31,6 +31,7 @@ struct Counter {
     check_balance_t: u8,
     open_account_t: u8,
     deposit_money_t: u8,
+    line: Vec<Counter>,
 }
 
 impl Counter {
@@ -40,6 +41,7 @@ impl Counter {
             check_balance_t: 0,
             open_account_t: 0,
             deposit_money_t: 0,
+            line: Vec::new(),
         }
     }
 
@@ -54,9 +56,14 @@ impl Counter {
 
 // main function
 fn main() {
-    let mut customer = Customer::new();
+    let mut customers: Vec<Customer> = Vec::new();
 
-    customer.seed();
+    for n in 1..=3 {
+        let mut customer = Customer::new();
+        customer.seed();
+
+        customers.push(customer);
+    }
 
     let mut counters: Vec<Counter> = Vec::new();
 
@@ -68,7 +75,6 @@ fn main() {
     }
 
     for counter in counters.iter() {
-        println!("{}", customer.need);
         println!("{}", counter.process_check_t);
         println!("{}", counter.check_balance_t);
         println!("{}", counter.open_account_t);
