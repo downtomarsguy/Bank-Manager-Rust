@@ -27,28 +27,28 @@ impl Customer {
 
 // counter classes
 struct Counter {
-    process_check: u8,
-    check_balance: u8,
-    open_account: u8,
-    deposit_money: u8,
+    process_check_t: u8,
+    check_balance_t: u8,
+    open_account_t: u8,
+    deposit_money_t: u8,
 }
 
 impl Counter {
     fn new() -> Counter {
         Counter {
-            process_check: 0,
-            check_balance: 0,
-            open_account: 0,
-            deposit_money: 0,
+            process_check_t: 0,
+            check_balance_t: 0,
+            open_account_t: 0,
+            deposit_money_t: 0,
         }
     }
 
     fn generate_durations(&mut self) {
         let mut rng = rand::rng();
-        self.process_check = rng.random_range(1..=10);
-        self.check_balance = rng.random_range(1..=10);
-        self.open_account = rng.random_range(1..=10);
-        self.deposit_money = rng.random_range(1..=10);
+        self.process_check_t = rng.random_range(1..=10);
+        self.check_balance_t = rng.random_range(1..=10);
+        self.open_account_t = rng.random_range(1..=10);
+        self.deposit_money_t = rng.random_range(1..=10);
     }
 }
 
@@ -58,13 +58,20 @@ fn main() {
 
     customer.seed();
 
-    let mut counter = Counter::new();
+    let mut counters: Vec<Counter> = Vec::new();
 
-    counter.generate_durations();
+    for n in 1..=3 {
+        let mut counter = Counter::new();
+        counter.generate_durations();
 
-    println!("{}", customer.need);
-    println!("{}", counter.process_check);
-    println!("{}", counter.check_balance);
-    println!("{}", counter.open_account);
-    println!("{}", counter.deposit_money);
+        counters.push(counter);
+    }
+
+    for counter in counters.iter() {
+        println!("{}", customer.need);
+        println!("{}", counter.process_check_t);
+        println!("{}", counter.check_balance_t);
+        println!("{}", counter.open_account_t);
+        println!("{}", counter.deposit_money_t);
+    }
 }
