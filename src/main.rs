@@ -72,14 +72,14 @@ impl MasterCounter {
         }
     }
 
-    fn addCounters(&mut counter: Counter) {
+    fn add_counters(&mut self, counter: Counter) {
         self.counters.push(counter);
     }
 }
 
 // main function
 fn main() {
-    let mut masterCounter = MasterCounter::new();
+    let mut master_counter = MasterCounter::new();
     let mut customers: Vec<Customer> = Vec::new();
 
     for _n in 1..=3 {
@@ -89,17 +89,13 @@ fn main() {
         customers.push(customer);
     }
 
-    let mut counters: Vec<Counter> = Vec::new();
-
     for _n in 1..=3 {
         let mut counter = Counter::new();
         counter.generate_durations();
-        masterCounter.addCounters(counter);
-
-        counters.push(counter);
+        master_counter.add_counters(counter);
     }
 
-    for counter in counters.iter() {
+    for counter in master_counter.counters.iter() {
         println!("{}", counter.process_check_t);
         println!("{}", counter.check_balance_t);
         println!("{}", counter.open_account_t);
