@@ -1,5 +1,6 @@
 // imports
 use rand::Rng;
+use rand::prelude::*;
 
 // customer class
 struct Customer {
@@ -14,14 +15,15 @@ impl Customer {
     }
 
     fn seed(&mut self) {
-        let tasks = vec![
-            "Process Check".to_string(),
-            "Check Balance".to_string(),
-            "Open Account".to_string(),
-            "Deposit Money".to_string(),
+        let tasks = [
+            "Process Check",
+            "Check Balance",
+            "Open Account",
+            "Deposit Money",
         ];
+
         let mut rng = rand::rng();
-        self.need = tasks[rng.random_range(0..=tasks.len() - 1)].to_string();
+        self.need = tasks.choose(&mut rng).expect("").to_string();
     }
 }
 
@@ -31,7 +33,7 @@ struct Counter {
     check_balance_t: u8,
     open_account_t: u8,
     deposit_money_t: u8,
-    line: Vec<Counter>,
+    line: Vec<Customer>,
 }
 
 impl Counter {
@@ -52,13 +54,35 @@ impl Counter {
         self.open_account_t = rng.random_range(1..=10);
         self.deposit_money_t = rng.random_range(1..=10);
     }
+
+    fn add_customer(&mut self, customer: Customer) {
+        self.line.push(customer);
+    }
+}
+
+// master counter
+struct MasterCounter {
+    counters: Vec<Counter>,
+}
+
+impl MasterCounter {
+    fn new() -> MasterCounter {
+        MasterCounter {
+            counters: Vec::new(),
+        }
+    }
+
+    fn addCounters(&mut counter: Counter) {
+        self.counters.push(counter);
+    }
 }
 
 // main function
 fn main() {
+    let mut masterCounter = MasterCounter::new();
     let mut customers: Vec<Customer> = Vec::new();
 
-    for n in 1..=3 {
+    for _n in 1..=3 {
         let mut customer = Customer::new();
         customer.seed();
 
@@ -67,9 +91,10 @@ fn main() {
 
     let mut counters: Vec<Counter> = Vec::new();
 
-    for n in 1..=3 {
+    for _n in 1..=3 {
         let mut counter = Counter::new();
         counter.generate_durations();
+        masterCounter.addCounters(counter);
 
         counters.push(counter);
     }
