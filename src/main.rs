@@ -59,13 +59,13 @@ impl Counter {
     fn generate_durations(&mut self, counter_id: u8) {
         let mut rng = rand::rng();
         self.tasks
-            .insert("Process Check".to_string(), rng.random_range(1..=10));
+            .insert("process_check_t".to_string(), rng.random_range(1..=10));
         self.tasks
-            .insert("Check Balance".to_string(), rng.random_range(1..=10));
+            .insert("check_balance_t".to_string(), rng.random_range(1..=10));
         self.tasks
-            .insert("Open Account".to_string(), rng.random_range(1..=10));
+            .insert("open_account_t".to_string(), rng.random_range(1..=10));
         self.tasks
-            .insert("Deposit money".to_string(), rng.random_range(1..=10));
+            .insert("deposit_money_t".to_string(), rng.random_range(1..=10));
 
         self.counter_id = counter_id;
     }
@@ -96,6 +96,35 @@ impl MasterCounter {
     fn add_counter(&mut self, counter: Counter) {
         self.counters.push(counter);
     }
+
+    fn sectionalize(&mut self, customer: Customer) {
+        self.customers.push(customer);
+
+        let variable = translate(self.customers[self.customers.len() - 1].need.clone());
+
+        let mut found = false;
+        for counter in self.counters.iter() {
+            if let Some(duration) = counter.get_task_duration(&variable) {
+                println!("The value of {} is {}", variable, duration);
+                found = true;
+                break;
+            }
+        }
+
+        if !found {
+            println!("No field named {} found in any counter", variable);
+        }
+    }
+}
+
+// translate function
+fn translate(input: String) -> String {
+    input
+        .split_whitespace()
+        .map(|word| word.to_lowercase())
+        .collect::<Vec<String>>()
+        .join("_")
+        + "_t"
 }
 
 // main function
@@ -111,12 +140,12 @@ fn main() {
     for _n in 1..=10 {
         let mut customer = Customer::new();
         customer.seed();
+        master_counter.sectionalize(customer);
     }
 
     for counter in master_counter.counters.iter() {
-        println!("{}", counter.process_check_t);
-        println!("{}", counter.check_balance_t);
-        println!("{}", counter.open_account_t);
-        println!("{}", counter.deposit_money_t);
+        for (task, duration) in &counter.tasks {
+            println!("{} {}", task, duration);
+        }
     }
 }
