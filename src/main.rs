@@ -59,13 +59,13 @@ impl Counter {
     fn generate_durations(&mut self, counter_id: u8) {
         let mut rng = rand::rng();
         self.tasks
-            .insert("process_check_t".to_string(), rng.gen_range(1..=10));
+            .insert("Process Check".to_string(), rng.random_range(1..=10));
         self.tasks
-            .insert("check_balance_t".to_string(), rng.gen_range(1..=10));
+            .insert("Check Balance".to_string(), rng.random_range(1..=10));
         self.tasks
-            .insert("open_account_t".to_string(), rng.gen_range(1..=10));
+            .insert("Open Account".to_string(), rng.random_range(1..=10));
         self.tasks
-            .insert("deposit_money_t".to_string(), rng.gen_range(1..=10));
+            .insert("Deposit money".to_string(), rng.random_range(1..=10));
 
         self.counter_id = counter_id;
     }
