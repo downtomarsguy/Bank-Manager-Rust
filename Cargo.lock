@@ -7,6 +7,7 @@ name = "Bank-Manager"
 version = "0.1.0"
 dependencies = [
  "rand",
+ "slice",
 ]
 
 [[package]]
@@ -95,6 +96,12 @@ checksum = "99d9a13982dcf210057a8a78572b2217b667c3beacbf3a0d8b454f6f82837d38"
 dependencies = [
  "getrandom",
 ]
+
+[[package]]
+name = "slice"
+version = "0.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a48d174c11a0755b515b7e09f63f10dec39f2d6b9911a8cefacbcc77c664f937"
 
 [[package]]
 name = "syn"

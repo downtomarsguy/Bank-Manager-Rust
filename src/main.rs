@@ -1,16 +1,19 @@
 // imports
 use rand::Rng;
 use rand::prelude::*;
+use std::collections::HashMap;
 
 // customer class
 struct Customer {
     need: String,
+    location: String,
 }
 
 impl Customer {
     fn new() -> Customer {
         Customer {
             need: String::new(),
+            location: String::new(),
         }
     }
 
@@ -33,7 +36,10 @@ struct Counter {
     check_balance_t: u8,
     open_account_t: u8,
     deposit_money_t: u8,
+    counter_id: u8,
     line: Vec<Customer>,
+    line_len: u8,
+    tasks: HashMap<String, u8>,
 }
 
 impl Counter {
@@ -43,36 +49,51 @@ impl Counter {
             check_balance_t: 0,
             open_account_t: 0,
             deposit_money_t: 0,
+            counter_id: 0,
             line: Vec::new(),
+            line_len: 0,
+            tasks: HashMap::new(),
         }
     }
 
-    fn generate_durations(&mut self) {
+    fn generate_durations(&mut self, counter_id: u8) {
         let mut rng = rand::rng();
-        self.process_check_t = rng.random_range(1..=10);
-        self.check_balance_t = rng.random_range(1..=10);
-        self.open_account_t = rng.random_range(1..=10);
-        self.deposit_money_t = rng.random_range(1..=10);
+        self.tasks
+            .insert("process_check_t".to_string(), rng.gen_range(1..=10));
+        self.tasks
+            .insert("check_balance_t".to_string(), rng.gen_range(1..=10));
+        self.tasks
+            .insert("open_account_t".to_string(), rng.gen_range(1..=10));
+        self.tasks
+            .insert("deposit_money_t".to_string(), rng.gen_range(1..=10));
+
+        self.counter_id = counter_id;
     }
 
     fn add_customer(&mut self, customer: Customer) {
         self.line.push(customer);
+    }
+
+    fn get_task_duration(&self, task: &str) -> Option<u8> {
+        self.tasks.get(task).copied()
     }
 }
 
 // master counter
 struct MasterCounter {
     counters: Vec<Counter>,
+    customers: Vec<Customer>,
 }
 
 impl MasterCounter {
     fn new() -> MasterCounter {
         MasterCounter {
             counters: Vec::new(),
+            customers: Vec::new(),
         }
     }
 
-    fn add_counters(&mut self, counter: Counter) {
+    fn add_counter(&mut self, counter: Counter) {
         self.counters.push(counter);
     }
 }
@@ -80,19 +101,16 @@ impl MasterCounter {
 // main function
 fn main() {
     let mut master_counter = MasterCounter::new();
-    let mut customers: Vec<Customer> = Vec::new();
 
-    for _n in 1..=3 {
-        let mut customer = Customer::new();
-        customer.seed();
-
-        customers.push(customer);
+    for n in 1..=3 {
+        let mut counter = Counter::new();
+        counter.generate_durations(n);
+        master_counter.add_counter(counter);
     }
 
-    for _n in 1..=3 {
-        let mut counter = Counter::new();
-        counter.generate_durations();
-        master_counter.add_counters(counter);
+    for _n in 1..=10 {
+        let mut customer = Customer::new();
+        customer.seed();
     }
 
     for counter in master_counter.counters.iter() {
