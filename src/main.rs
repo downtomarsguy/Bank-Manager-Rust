@@ -32,10 +32,6 @@ impl Customer {
 
 // counter classes
 struct Counter {
-    process_check_t: u8,
-    check_balance_t: u8,
-    open_account_t: u8,
-    deposit_money_t: u8,
     counter_id: u8,
     line: Vec<Customer>,
     line_len: u8,
@@ -45,10 +41,6 @@ struct Counter {
 impl Counter {
     fn new() -> Counter {
         Counter {
-            process_check_t: 0,
-            check_balance_t: 0,
-            open_account_t: 0,
-            deposit_money_t: 0,
             counter_id: 0,
             line: Vec::new(),
             line_len: 0,
@@ -71,6 +63,14 @@ impl Counter {
     }
 
     fn add_customer(&mut self, customer: Customer) {
+        let variable = translate(customer.need.clone());
+
+        if let Some(duration) = self.get_task_duration(&variable) {
+            println!("The value of {} is {}", variable, duration);
+
+            self.line_len = duration;
+        }
+
         self.line.push(customer);
     }
 
@@ -82,14 +82,12 @@ impl Counter {
 // master counter
 struct MasterCounter {
     counters: Vec<Counter>,
-    customers: Vec<Customer>,
 }
 
 impl MasterCounter {
     fn new() -> MasterCounter {
         MasterCounter {
             counters: Vec::new(),
-            customers: Vec::new(),
         }
     }
 
@@ -98,21 +96,23 @@ impl MasterCounter {
     }
 
     fn sectionalize(&mut self, customer: Customer) {
-        self.customers.push(customer);
+        let variable = translate(customer.need.clone());
 
-        let variable = translate(self.customers[self.customers.len() - 1].need.clone());
+        let mut line_length: Vec<u8> = Vec::new();
 
-        let mut found = false;
         for counter in self.counters.iter() {
+            line_length.push(counter.line_len);
+
             if let Some(duration) = counter.get_task_duration(&variable) {
                 println!("The value of {} is {}", variable, duration);
-                found = true;
                 break;
             }
         }
 
-        if !found {
-            println!("No field named {} found in any counter", variable);
+        if let Some(min_index) = line_length.iter().enumerate().min_by_key(|&(_, &val)| val) {
+            let smallest_line_index = min_index.0;
+
+            self.counters[smallest_line_index].add_customer(customer);
         }
     }
 }
