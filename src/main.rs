@@ -2,6 +2,10 @@
 use rand::Rng;
 use rand::prelude::*;
 use std::collections::HashMap;
+use std::sync::{
+    Arc,
+    atomic::{AtomicU8, AtomicU64, Ordering},
+};
 use std::thread;
 use std::time::Duration;
 
@@ -40,7 +44,7 @@ impl Customer {
 struct Counter {
     counter_id: u8,
     line: Vec<Customer>,
-    line_len: u8,
+    line_len: Arc<AtomicU8>,
     tasks: HashMap<String, u8>,
 }
 
@@ -49,7 +53,7 @@ impl Counter {
         Counter {
             counter_id: 0,
             line: Vec::new(),
-            line_len: 0,
+            line_len: Arc::new(AtomicU8::new(0)),
             tasks: HashMap::new(),
         }
     }
@@ -66,13 +70,15 @@ impl Counter {
             .insert("Deposit Money".to_string(), rng.random_range(1..=10));
 
         self.counter_id = counter_id;
+
+        self.generate_thread();
     }
 
     fn add_customer(&mut self, customer: Customer) {
         let variable = customer.need.clone();
 
         if let Some(duration) = self.get_task_duration(&variable) {
-            self.line_len += duration;
+            self.line_len.fetch_add(duration, Ordering::SeqCst);
         }
 
         self.line.push(customer);
@@ -80,6 +86,17 @@ impl Counter {
 
     fn get_task_duration(&self, task: &str) -> Option<u8> {
         self.tasks.get(task).copied()
+    }
+
+    fn generate_thread(&mut self) {
+        let line_len = Arc::clone(&self.line_len);
+
+        thread::spawn(move || {
+            while line_len.load(Ordering::SeqCst) == 0 {
+                thread::sleep(Duration::from_secs(1));
+            }
+            println!("line_len updated");
+        });
     }
 }
 
@@ -103,7 +120,7 @@ impl MasterCounter {
         let mut line_lengths: Vec<u8> = Vec::new();
 
         for counter in self.counters.iter() {
-            line_lengths.push(counter.line_len);
+            line_lengths.push(counter.line_len.load(Ordering::SeqCst));
         }
 
         let min_index = line_lengths
@@ -130,6 +147,7 @@ fn main() {
         let mut customer = Customer::new();
         customer.seed(n);
         master_counter.sectionalize(customer);
+        thread::sleep(Duration::from_secs(rand::rng().random_range(1..=5)));
     }
 
     for counter in master_counter.counters.iter() {
