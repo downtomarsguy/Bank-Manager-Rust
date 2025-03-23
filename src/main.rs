@@ -51,7 +51,7 @@ impl Counter {
     fn new() -> Counter {
         Counter {
             counter_id: 0,
-            line: Arc::new(Mutex::new(VecDeque::new())), // Changed to VecDeque
+            line: Arc::new(Mutex::new(VecDeque::new())),
             line_len: Arc::new(AtomicU8::new(0)),
             tasks: HashMap::new(),
             thread_handle: None,
@@ -188,5 +188,5 @@ fn main() {
         handle.join().expect("Thread failed to join");
     }
 
-    println!("All customers tasks have been satisifed.");
+    println!("All customers tasks have been satisfied.");
 }
