@@ -1,7 +1,7 @@
 // imports
 use rand::Rng;
 use rand::prelude::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::sync::{
     Arc, Mutex,
     atomic::{AtomicU8, Ordering},
@@ -41,18 +41,20 @@ impl Customer {
 // counter classes
 struct Counter {
     counter_id: u8,
-    line: Arc<Mutex<Vec<Customer>>>,
+    line: Arc<Mutex<VecDeque<Customer>>>,
     line_len: Arc<AtomicU8>,
     tasks: HashMap<String, u8>,
+    thread_handle: Option<thread::JoinHandle<()>>,
 }
 
 impl Counter {
     fn new() -> Counter {
         Counter {
             counter_id: 0,
-            line: Arc::new(Mutex::new(Vec::new())),
+            line: Arc::new(Mutex::new(VecDeque::new())), // Changed to VecDeque
             line_len: Arc::new(AtomicU8::new(0)),
             tasks: HashMap::new(),
+            thread_handle: None,
         }
     }
 
@@ -80,7 +82,7 @@ impl Counter {
         }
 
         let mut line = self.line.lock().unwrap();
-        line.push(customer);
+        line.push_back(customer);
     }
 
     fn get_task_duration(&self, task: &str) -> Option<u8> {
@@ -93,7 +95,7 @@ impl Counter {
         let line = Arc::clone(&self.line);
         let counter_id = self.counter_id;
 
-        thread::spawn(move || {
+        let handle = thread::spawn(move || {
             while line_len.load(Ordering::SeqCst) == 0 {
                 thread::sleep(Duration::from_secs(1));
             }
@@ -101,7 +103,7 @@ impl Counter {
             while line_len.load(Ordering::SeqCst) != 0 {
                 let mut line = line.lock().unwrap();
 
-                if let Some(customer) = line.first() {
+                if let Some(customer) = line.front() {
                     let task = &customer.need;
 
                     if let Some(duration) = tasks.get(task) {
@@ -110,7 +112,7 @@ impl Counter {
                             customer.customer_id, customer.need, counter_id
                         );
                         thread::sleep(Duration::from_secs(*duration as u64));
-                        line.remove(0);
+                        line.pop_front();
                         line_len.fetch_sub(*duration, Ordering::SeqCst);
                     }
                 }
@@ -119,6 +121,8 @@ impl Counter {
             }
             println!("Line processed for counter {}", counter_id);
         });
+
+        self.thread_handle = Some(handle);
     }
 }
 
@@ -172,5 +176,17 @@ fn main() {
         master_counter.sectionalize(customer);
     }
 
-    thread::sleep(Duration::from_secs(60));
+    let mut handles = Vec::new();
+
+    for counter in master_counter.counters.iter_mut() {
+        if let Some(handle) = counter.thread_handle.take() {
+            handles.push(handle);
+        }
+    }
+
+    for handle in handles {
+        handle.join().expect("Thread failed to join");
+    }
+
+    println!("All customers tasks have been satisifed.");
 }
