@@ -3,8 +3,8 @@ use rand::Rng;
 use rand::prelude::*;
 use std::collections::HashMap;
 use std::sync::{
-    Arc,
-    atomic::{AtomicU8, AtomicU64, Ordering},
+    Arc, Mutex,
+    atomic::{AtomicU8, Ordering},
 };
 use std::thread;
 use std::time::Duration;
@@ -12,7 +12,6 @@ use std::time::Duration;
 // customer class
 struct Customer {
     need: String,
-    location: String,
     customer_id: u8,
 }
 
@@ -20,7 +19,6 @@ impl Customer {
     fn new() -> Customer {
         Customer {
             need: String::new(),
-            location: String::new(),
             customer_id: 0,
         }
     }
@@ -43,7 +41,7 @@ impl Customer {
 // counter classes
 struct Counter {
     counter_id: u8,
-    line: Vec<Customer>,
+    line: Arc<Mutex<Vec<Customer>>>,
     line_len: Arc<AtomicU8>,
     tasks: HashMap<String, u8>,
 }
@@ -52,7 +50,7 @@ impl Counter {
     fn new() -> Counter {
         Counter {
             counter_id: 0,
-            line: Vec::new(),
+            line: Arc::new(Mutex::new(Vec::new())),
             line_len: Arc::new(AtomicU8::new(0)),
             tasks: HashMap::new(),
         }
@@ -81,7 +79,8 @@ impl Counter {
             self.line_len.fetch_add(duration, Ordering::SeqCst);
         }
 
-        self.line.push(customer);
+        let mut line = self.line.lock().unwrap();
+        line.push(customer);
     }
 
     fn get_task_duration(&self, task: &str) -> Option<u8> {
@@ -90,12 +89,35 @@ impl Counter {
 
     fn generate_thread(&mut self) {
         let line_len = Arc::clone(&self.line_len);
+        let tasks = self.tasks.clone();
+        let line = Arc::clone(&self.line);
+        let counter_id = self.counter_id;
 
         thread::spawn(move || {
             while line_len.load(Ordering::SeqCst) == 0 {
                 thread::sleep(Duration::from_secs(1));
             }
-            println!("line_len updated");
+
+            while line_len.load(Ordering::SeqCst) != 0 {
+                let mut line = line.lock().unwrap();
+
+                if let Some(customer) = line.first() {
+                    let task = &customer.need;
+
+                    if let Some(duration) = tasks.get(task) {
+                        println!(
+                            "Found customer {} with need: {} at counter: {}",
+                            customer.customer_id, customer.need, counter_id
+                        );
+                        thread::sleep(Duration::from_secs(*duration as u64));
+                        line.remove(0);
+                        line_len.fetch_sub(*duration, Ordering::SeqCst);
+                    }
+                }
+
+                thread::sleep(Duration::from_secs(5));
+            }
+            println!("Line processed for counter {}", counter_id);
         });
     }
 }
@@ -133,6 +155,7 @@ impl MasterCounter {
         self.counters[min_index].add_customer(customer);
     }
 }
+
 // main function
 fn main() {
     let mut master_counter = MasterCounter::new();
@@ -147,18 +170,7 @@ fn main() {
         let mut customer = Customer::new();
         customer.seed(n);
         master_counter.sectionalize(customer);
-        thread::sleep(Duration::from_secs(rand::rng().random_range(1..=5)));
     }
 
-    for counter in master_counter.counters.iter() {
-        for (task, duration) in &counter.tasks {
-            println!("{} {} {}", counter.counter_id, task, duration);
-        }
-    }
-
-    for counter in master_counter.counters.iter() {
-        for customer in &counter.line {
-            println!("{} {}", counter.counter_id, customer.customer_id);
-        }
-    }
+    thread::sleep(Duration::from_secs(60));
 }
